@@ -3,9 +3,6 @@ use actix_multipart::form::{MultipartForm, tempfile::TempFile};
 use actix_web::web::ServiceConfig;
 use actix_web::{HttpResponse, Responder, post};
 use log;
-use std::fs;
-use std::io;
-use std::path::PathBuf;
 
 #[derive(Debug, MultipartForm)]
 struct UploadForm {
@@ -16,26 +13,26 @@ struct UploadForm {
 pub async fn upload_video(
     MultipartForm(form): MultipartForm<UploadForm>,
 ) -> Result<impl Responder, Error> {
-    let file_name = form.file.file_name.as_ref().unwrap();
+    let file_name = match form.file.file_name.as_ref() {
+        Some(f) => f,
+        None => return Ok(HttpResponse::BadRequest().finish()),
+    };
+
     log::info!(
-        "temp file name: {:?}, size: {:?} bytes",
+        "receive file: name = {:?}, size = {:?} bytes",
         file_name,
         form.file.size,
     );
 
-    if let Err(e) = fs::create_dir("uploads")
-        && e.kind() != io::ErrorKind::AlreadyExists
-    {
-        log::error!("failed to create `uploads` directory");
-        return Ok(HttpResponse::InternalServerError().finish());
-    }
-    let path: PathBuf = ["uploads", file_name].iter().collect();
-    if let Err(_) = form.file.file.persist(&path) {
-        log::warn!("uploaded file dropped without updating");
-        Ok(HttpResponse::InternalServerError().finish())
-    } else {
-        Ok(HttpResponse::Ok().finish())
-    }
+    // TODO: Analyze the received video with our model.
+    // This can be done by invoking another process that
+    // executes an evaluation script.
+
+    // TODO: Access the analysis results and build response.
+    // Build abstraction upon both the analysis results and
+    // the response body, both should be serializable type.
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub fn config(cfg: &mut ServiceConfig) {
