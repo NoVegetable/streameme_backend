@@ -51,7 +51,7 @@ impl VideoAnalyzer {
         let out_dir = TempDir::new_in(".")?;
 
         let output = Command::new("../streameme_inference/.venv/bin/python")
-            .arg("inference.py")
+            .arg("../streameme_inference/inference.py")
             .arg("--video_path")
             .arg(&self.config.video_path)
             .arg("--video_name")
