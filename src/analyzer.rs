@@ -61,12 +61,6 @@ impl VideoAnalyzer {
             .output()
             .await?;
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        log::info!("{}", &stdout);
-
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        log::error!("{}", &stderr);
-
         if output.status.success() {
             Ok(VideoAnalyzerOutput::new(
                 true,
