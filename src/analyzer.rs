@@ -3,6 +3,8 @@ use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::io;
 use std::path::{Path, PathBuf};
+use tempfile::TempDir;
+use tokio::process::Command;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
@@ -46,10 +48,31 @@ pub struct VideoAnalyzer {
 
 impl VideoAnalyzer {
     pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
-        log::info!("video at: {:?}", self.config.video_path);
-        Ok(VideoAnalyzerOutput::new(vec![
-            VideoAnalyzerSuggestion::new(30, 60, MemeType::Surprise),
-        ]))
+        let out_dir = TempDir::new_in(".")?;
+
+        let output = Command::new("../streameme_inference/.venv/bin/python")
+            .arg("../streameme_inference/inference.py")
+            .arg("--video_path")
+            .arg(&self.config.video_path)
+            .arg("--video_name")
+            .arg("video")
+            .arg("--output_dir")
+            .arg(out_dir.path())
+            .output()
+            .await?;
+
+        if output.status.success() {
+            Ok(VideoAnalyzerOutput::new(
+                true,
+                Some(vec![VideoAnalyzerSuggestion::new(
+                    30,
+                    60,
+                    MemeType::Surprise,
+                )]),
+            ))
+        } else {
+            Ok(VideoAnalyzerOutput::new(false, None))
+        }
     }
 }
 
@@ -102,10 +125,16 @@ impl VideoAnalyzerSuggestion {
 }
 
 #[derive(Debug, Serialize)]
-pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
+pub struct VideoAnalyzerOutput {
+    success: bool,
+    suggestions: Option<Vec<VideoAnalyzerSuggestion>>,
+}
 
 impl VideoAnalyzerOutput {
-    pub fn new(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
-        Self(Some(suggestions))
+    pub fn new(success: bool, suggestions: Option<Vec<VideoAnalyzerSuggestion>>) -> Self {
+        Self {
+            success,
+            suggestions,
+        }
     }
 }
