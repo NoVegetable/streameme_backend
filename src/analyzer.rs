@@ -102,10 +102,10 @@ impl VideoAnalyzerSuggestion {
 }
 
 #[derive(Debug, Serialize)]
-pub struct VideoAnalyzerOutput(Vec<VideoAnalyzerSuggestion>);
+pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
 impl VideoAnalyzerOutput {
     pub fn new(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
-        Self(suggestions)
+        Self(Some(suggestions))
     }
 }
