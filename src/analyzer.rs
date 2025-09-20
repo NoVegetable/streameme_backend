@@ -61,8 +61,6 @@ impl VideoAnalyzer {
             .await?;
 
         if output.status.success() {
-            Ok(VideoAnalyzerOutput::new(false, None))
-        } else {
             Ok(VideoAnalyzerOutput::new(
                 true,
                 Some(vec![VideoAnalyzerSuggestion::new(
@@ -71,6 +69,8 @@ impl VideoAnalyzer {
                     MemeType::Surprise,
                 )]),
             ))
+        } else {
+            Ok(VideoAnalyzerOutput::new(false, None))
         }
     }
 }
