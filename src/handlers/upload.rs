@@ -1,10 +1,11 @@
-use crate::analyzer::{VideoAnalyzerConfig, VideoAnalyzerMode};
+use crate::analyzer::{VideoAnalyzerConfig, VideoAnalyzerMode, VideoAnalyzerOutput};
 use actix_multipart::form::{MultipartForm, json::Json as MpJson, tempfile::TempFile};
 use actix_web::error::Error;
 use actix_web::web::ServiceConfig;
 use actix_web::{HttpResponse, Responder, post};
 use log;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Debug, Deserialize)]
 struct UploadFormMetadata {
@@ -15,6 +16,29 @@ struct UploadFormMetadata {
 struct UploadForm {
     file: TempFile,
     metadata: MpJson<UploadFormMetadata>,
+}
+
+#[derive(Debug, Serialize)]
+struct UploadResponse {
+    file_name: String,
+    analyze_time: OffsetDateTime,
+    analyze_mode: VideoAnalyzerMode,
+    suggestions: VideoAnalyzerOutput,
+}
+
+impl UploadResponse {
+    pub fn new(
+        file_name: &String,
+        analyze_mode: VideoAnalyzerMode,
+        suggestions: VideoAnalyzerOutput,
+    ) -> Self {
+        Self {
+            file_name: file_name.clone(),
+            analyze_time: OffsetDateTime::now_utc(),
+            analyze_mode,
+            suggestions,
+        }
+    }
 }
 
 #[post("/upload")]
@@ -40,7 +64,9 @@ pub async fn upload_video(
         .build();
     let output = analyzer.run().await?;
 
-    Ok(HttpResponse::Ok().json(output))
+    let res = UploadResponse::new(file_name, mdata.mode, output);
+
+    Ok(HttpResponse::Ok().json(res))
 }
 
 pub fn config(cfg: &mut ServiceConfig) {

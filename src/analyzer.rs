@@ -9,7 +9,7 @@ use tempfile::TempDir;
 use tokio::fs;
 use tokio::process::Command;
 
-#[derive(Debug, Copy, Clone, Deserialize_repr)]
+#[derive(Debug, Copy, Clone, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 pub enum VideoAnalyzerMode {
     Binary = 0,
