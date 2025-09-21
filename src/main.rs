@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
     .bind((Ipv4Addr::UNSPECIFIED, 9090))?
     .run();
 
-    log::info!("start HTTP server at http://localhost:8080");
+    log::info!("start HTTP server at http://localhost:9090");
 
     server.await
 }
