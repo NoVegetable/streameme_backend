@@ -53,10 +53,13 @@ impl VideoAnalyzer {
     pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
 
-        log::info!("invoke inference script at ../streameme_inference/inference.py");
+        let command_dir = fs::canonicalize("../streameme_inference").await?;
 
-        let output = Command::new("../streameme_inference/.venv/bin/python")
-            .arg("../streameme_inference/inference.py")
+        log::info!("execute inference script at {:?}/inference.py", command_dir);
+
+        let output = Command::new("./.venv/bin/python")
+            .current_dir(command_dir)
+            .arg("inference.py")
             .arg("--video_path")
             .arg(&self.config.video_path)
             .arg("--video_name")
