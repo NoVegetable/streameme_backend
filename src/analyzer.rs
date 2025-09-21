@@ -1,9 +1,12 @@
+use crate::inference::InferenceOutput;
 use log;
 use serde::Serialize;
+use serde_json;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::io;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
+use tokio::fs;
 use tokio::process::Command;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
@@ -50,6 +53,8 @@ impl VideoAnalyzer {
     pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
 
+        log::info!("invoke inference script at ../streameme_inference/inference.py");
+
         let output = Command::new("../streameme_inference/.venv/bin/python")
             .arg("../streameme_inference/inference.py")
             .arg("--video_path")
@@ -62,16 +67,19 @@ impl VideoAnalyzer {
             .await?;
 
         if output.status.success() {
-            Ok(VideoAnalyzerOutput::new(
-                true,
-                Some(vec![VideoAnalyzerSuggestion::new(
-                    30,
-                    60,
-                    MemeType::Surprise,
-                )]),
-            ))
+            log::info!("inference script exited successfully");
+            let mut inference_out_path = PathBuf::new();
+            inference_out_path.push(out_dir.path());
+            inference_out_path.push("suggestions.json");
+            let inference_out_str = fs::read_to_string(&inference_out_path).await?;
+            let inference_output: InferenceOutput = serde_json::from_str(&inference_out_str)?;
+
+            Ok(VideoAnalyzerOutput::from(inference_output))
         } else {
-            Ok(VideoAnalyzerOutput::new(false, None))
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            log::error!("inference script exited within error: {}", stderr);
+
+            Ok(VideoAnalyzerOutput::new(None))
         }
     }
 }
@@ -88,6 +96,7 @@ pub enum MemeType {
 }
 
 #[derive(Debug, Serialize)]
+#[repr(transparent)]
 pub struct MemeTypeDesc(String);
 
 impl MemeTypeDesc {
@@ -114,6 +123,7 @@ pub struct VideoAnalyzerSuggestion {
 }
 
 impl VideoAnalyzerSuggestion {
+    #[inline]
     pub fn new(start: u32, end: u32, meme_type: MemeType) -> Self {
         Self {
             start,
@@ -125,16 +135,36 @@ impl VideoAnalyzerSuggestion {
 }
 
 #[derive(Debug, Serialize)]
-pub struct VideoAnalyzerOutput {
-    success: bool,
-    suggestions: Option<Vec<VideoAnalyzerSuggestion>>,
-}
+#[repr(transparent)]
+pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
 impl VideoAnalyzerOutput {
-    pub fn new(success: bool, suggestions: Option<Vec<VideoAnalyzerSuggestion>>) -> Self {
-        Self {
-            success,
-            suggestions,
-        }
+    #[inline]
+    pub fn new(suggestions: Option<Vec<VideoAnalyzerSuggestion>>) -> Self {
+        Self(suggestions)
+    }
+}
+
+impl From<InferenceOutput> for VideoAnalyzerOutput {
+    fn from(output: InferenceOutput) -> Self {
+        let suggestions: Vec<VideoAnalyzerSuggestion> = output
+            .0
+            .into_iter()
+            .filter_map(|unit| {
+                let meme_type = match unit.suggestion.as_str() {
+                    "happiness" => MemeType::Happiness,
+                    "love" => MemeType::Love,
+                    "anger" => MemeType::Anger,
+                    "sorrow" => MemeType::Sorrow,
+                    "hate" => MemeType::Hate,
+                    "surprise" => MemeType::Surprise,
+                    _ => return None,
+                };
+                Some(VideoAnalyzerSuggestion::new(
+                    unit.start, unit.end, meme_type,
+                ))
+            })
+            .collect();
+        Self::new(Some(suggestions))
     }
 }

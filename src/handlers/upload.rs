@@ -34,18 +34,11 @@ pub async fn upload_video(
         form.file.size,
     );
 
-    // TODO: Analyze the received video with our model.
-    // This can be done by invoking another process that
-    // executes an evaluation script.
     let mdata = form.metadata.into_inner();
     let analyzer = VideoAnalyzerConfig::new(form.file.file.path())
         .analyze_mode(mdata.mode)
         .build();
     let output = analyzer.run().await?;
-
-    // TODO: Access the analysis results and build response.
-    // Build abstraction upon both the analysis results and
-    // the response body, both should be serializable type.
 
     Ok(HttpResponse::Ok().json(output))
 }

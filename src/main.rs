@@ -29,7 +29,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(TempFileConfig::default().directory(path))
             .configure(handlers::config)
     })
-    .bind((Ipv4Addr::UNSPECIFIED, 8080))?
+    .bind((Ipv4Addr::UNSPECIFIED, 9090))?
     .run();
 
     log::info!("start HTTP server at http://localhost:8080");
