@@ -9,11 +9,25 @@ use tempfile::TempDir;
 use tokio::fs;
 use tokio::process::Command;
 
-#[derive(Debug, Copy, Clone, Serialize_repr, Deserialize_repr)]
+#[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
 pub enum VideoAnalyzerMode {
     Binary = 0,
     Multi = 1,
+}
+
+#[derive(Debug, Serialize)]
+#[repr(transparent)]
+pub struct VideoAnalyzerModeDesc(String);
+
+impl VideoAnalyzerModeDesc {
+    pub fn new(mode: VideoAnalyzerMode) -> Self {
+        use VideoAnalyzerMode::*;
+        Self(match mode {
+            Binary => String::from("binary"),
+            Multi => String::from("multi"),
+        })
+    }
 }
 
 #[derive(Debug, Clone)]

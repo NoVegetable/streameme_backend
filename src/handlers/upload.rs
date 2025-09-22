@@ -1,4 +1,6 @@
-use crate::analyzer::{VideoAnalyzerConfig, VideoAnalyzerMode, VideoAnalyzerOutput};
+use crate::analyzer::{
+    VideoAnalyzerConfig, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
+};
 use actix_multipart::form::{MultipartForm, json::Json as MpJson, tempfile::TempFile};
 use actix_web::error::Error;
 use actix_web::web::ServiceConfig;
@@ -22,7 +24,7 @@ struct UploadForm {
 struct UploadResponse {
     file_name: String,
     analyze_time: OffsetDateTime,
-    analyze_mode: VideoAnalyzerMode,
+    analyze_mode: VideoAnalyzerModeDesc,
     suggestions: VideoAnalyzerOutput,
 }
 
@@ -35,7 +37,7 @@ impl UploadResponse {
         Self {
             file_name: file_name.clone(),
             analyze_time: OffsetDateTime::now_utc(),
-            analyze_mode,
+            analyze_mode: VideoAnalyzerModeDesc::new(analyze_mode),
             suggestions,
         }
     }
