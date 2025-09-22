@@ -34,7 +34,7 @@ This API receives `multipart/form-data` requests, which should contain two field
 
 This API can be tested with `curl`:
 ```
-curl -v -F 'metadata={"mode":1};type=application/json' -F file@<video_file> http://<host>:9090/upload
+curl -v -F 'metadata={"mode":1};type=application/json' -F file=@<video_file> http://<host>:9090/upload
 ```
 where \<video_file\> is the path to the video you want to analyze, and \<host\> is the host the backend running on.
 
