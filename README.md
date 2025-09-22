@@ -8,6 +8,11 @@ First, please ensure you have installed [Rust](https://www.rust-lang.org/). You 
 
 Then, you need to ensure the StreaMeme Inference project is at the location `../streameme_inference` (This is subject to change).
 
+Please also generate self-signed certificate and private key using `openssl`:
+```bash
+openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365 -subj '/CN=localhost'
+```
+
 After that, you can invoke the backend with the following command:
 ```bash
 cargo run --release
