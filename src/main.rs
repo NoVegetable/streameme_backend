@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     let tmp_dir = Arc::new(Mutex::new(TempDir::new_in(".")?));
 
     let tmp_dir_2 = tmp_dir.clone();
-    let server = HttpServer::new(move || {
+    HttpServer::new(move || {
         let tmp_dir = tmp_dir_2.lock().unwrap();
         let path = tmp_dir.path();
         App::new()
@@ -48,9 +48,6 @@ async fn main() -> std::io::Result<()> {
             .configure(handlers::config)
     })
     .bind((Ipv4Addr::UNSPECIFIED, port))?
-    .run();
-
-    log::info!("start HTTP server at http://localhost:{}", port);
-
-    server.await
+    .run()
+    .await
 }

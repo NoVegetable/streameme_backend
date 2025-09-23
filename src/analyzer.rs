@@ -69,7 +69,7 @@ impl VideoAnalyzer {
 
         let command_dir = fs::canonicalize("../streameme_inference").await?;
 
-        log::info!("execute inference.py under {:?}", command_dir);
+        log::info!("executing inference.py under {:?}", command_dir);
 
         let output = Command::new("./.venv/bin/python")
             .current_dir(command_dir)
@@ -94,7 +94,10 @@ impl VideoAnalyzer {
             Ok(VideoAnalyzerOutput::from(inference_output))
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            log::error!("inference script exited within error: {}", stderr);
+            log::error!(
+                "inference script exited within error; dumping stderr: {}",
+                stderr
+            );
 
             Ok(VideoAnalyzerOutput::new(None))
         }
