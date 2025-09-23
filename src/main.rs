@@ -1,4 +1,5 @@
 use actix_cors::Cors;
+use actix_multipart::form::MultipartFormConfig;
 use actix_multipart::form::tempfile::TempFileConfig;
 use actix_web::{App, HttpServer, middleware};
 use clap::{Arg, Command, value_parser};
@@ -7,6 +8,8 @@ use std::net::Ipv4Addr;
 use std::sync::{Arc, Mutex};
 use streameme_backend::handlers;
 use tempfile::TempDir;
+
+const UPLOAD_SIZE_LIMIT: usize = 2 * 1024 * 1024 * 1024; // 2 GB
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -41,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             )
             .wrap(middleware::Logger::default())
             .app_data(TempFileConfig::default().directory(path))
+            .app_data(MultipartFormConfig::default().total_limit(UPLOAD_SIZE_LIMIT))
             .configure(handlers::config)
     })
     .bind((Ipv4Addr::UNSPECIFIED, port))?

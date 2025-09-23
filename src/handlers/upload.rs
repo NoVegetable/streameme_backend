@@ -16,7 +16,6 @@ struct UploadFormMetadata {
 
 #[derive(Debug, MultipartForm)]
 struct UploadForm {
-    #[multipart(limit = "2GB")]
     file: TempFile,
     metadata: MpJson<UploadFormMetadata>,
 }
