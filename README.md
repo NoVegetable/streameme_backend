@@ -12,7 +12,10 @@ After that, you can invoke the backend with the following command:
 ```bash
 cargo run --release
 ```
-which will start the backend at port 9090.
+which will start the backend at port 9090. You can also choose another port using `--port` (or `-p`) argument, such as
+```bash
+cargo run -- --port 6789
+```
 
 ## APIs
 
@@ -28,15 +31,16 @@ This API receives `multipart/form-data` requests, which should contain two field
         "mode": 1
     }
     ```
-    "mode" should be either 0 (binary) or 1 (multi). However, binary mode is still not supported at the time of writing.
+    "mode" should be either 0 (binary) or 1 (multi). However, binary mode is still not supported at the time of writing, thus setting `mode` to 0 still invoke the same inference procedure as setting it to 1.
 
 - `file`: the file part, which should contains the video file to be analyzed.
+  - Currently, the size limit for the video is set to **2 GB**. The backend will return a "Payload error" message for any video beyonds this limit.
 
 This API can be tested with `curl`:
 ```
-curl -v -F 'metadata={"mode":1};type=application/json' -F file=@<video_file> http://<host>:9090/upload
+curl -v -F 'metadata={"mode":1};type=application/json' -F file=@<video_file> http://<host>:<port>/upload
 ```
-where \<video_file\> is the path to the video you want to analyze, and \<host\> is the host the backend running on.
+where `<video_file>` is the path to the video you want to analyze, `<host>` is the host the backend running on, and `<port>` is the port number the backend is listening on.
 
 The API returns responses in the form like this:
 ```
