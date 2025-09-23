@@ -6,6 +6,7 @@ use actix_web::error::Error;
 use actix_web::web::ServiceConfig;
 use actix_web::{HttpResponse, Responder, post};
 use log;
+use mime;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -55,9 +56,13 @@ pub async fn upload_video(
     };
 
     log::info!(
-        "file received: name: {:?}, size: {:?} bytes",
+        "file received: {:?}, size: {:?} bytes, content type: {:?}",
         file_name,
         form.file.size,
+        form.file
+            .content_type
+            .unwrap_or(mime::APPLICATION_OCTET_STREAM)
+            .essence_str()
     );
 
     let mdata = form.metadata.into_inner();
