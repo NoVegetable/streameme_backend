@@ -68,7 +68,6 @@ impl VideoAnalyzer {
         let out_dir = TempDir::new_in(".")?;
 
         let command_dir = fs::canonicalize("../streameme_inference").await?;
-
         log::info!("executing inference.py under {:?}", command_dir);
 
         let output = Command::new("./.venv/bin/python")

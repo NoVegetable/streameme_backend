@@ -56,7 +56,7 @@ pub async fn upload_video(
     };
 
     log::info!(
-        "file received: {:?}, size: {:?} bytes, content type: {:?}",
+        "file received: {}, size: {} bytes, content type: {}",
         file_name,
         form.file.size,
         form.file
