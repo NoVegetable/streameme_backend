@@ -13,6 +13,8 @@ const UPLOAD_SIZE_LIMIT: usize = 2 * 1024 * 1024 * 1024; // 2 GB
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(Env::new().default_filter_or("info"));
+
     let matches = Command::new("streameme_backend")
         .arg(
             Arg::new("port")
@@ -23,13 +25,9 @@ async fn main() -> std::io::Result<()> {
                 .default_value("9090"),
         )
         .get_matches();
-
     let port = *matches.get_one::<u16>("port").unwrap();
 
-    env_logger::init_from_env(Env::new().default_filter_or("info"));
-
     let tmp_dir = Arc::new(Mutex::new(TempDir::new_in(".")?));
-
     let tmp_dir_2 = tmp_dir.clone();
     HttpServer::new(move || {
         let tmp_dir = tmp_dir_2.lock().unwrap();
