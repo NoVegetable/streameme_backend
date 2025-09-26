@@ -21,6 +21,7 @@ pub enum VideoAnalyzerMode {
 pub struct VideoAnalyzerModeDesc(String);
 
 impl VideoAnalyzerModeDesc {
+    #[inline]
     pub fn new(mode: VideoAnalyzerMode) -> Self {
         use VideoAnalyzerMode::*;
         Self(match mode {
@@ -119,6 +120,7 @@ pub enum MemeType {
 pub struct MemeTypeDesc(String);
 
 impl MemeTypeDesc {
+    #[inline]
     pub fn new(meme_type: MemeType) -> Self {
         use MemeType::*;
 
@@ -167,7 +169,7 @@ impl VideoAnalyzerOutput {
 impl From<InferenceOutput> for VideoAnalyzerOutput {
     fn from(output: InferenceOutput) -> Self {
         let suggestions: Vec<VideoAnalyzerSuggestion> = output
-            .0
+            .into_inner()
             .into_iter()
             .filter_map(|unit| {
                 let meme_type = match unit.suggestion.as_str() {
