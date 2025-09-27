@@ -1,7 +1,5 @@
 use crate::inference::InferenceOutput;
-use log;
 use serde::Serialize;
-use serde_json;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -155,15 +153,9 @@ impl VideoAnalyzerSuggestion {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 #[repr(transparent)]
 pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
-
-impl Default for VideoAnalyzerOutput {
-    fn default() -> Self {
-        Self(None)
-    }
-}
 
 impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
     fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {

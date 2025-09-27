@@ -31,12 +31,12 @@ struct UploadResponse {
 
 impl UploadResponse {
     pub fn new(
-        file_name: &String,
+        file_name: &str,
         analyze_mode: VideoAnalyzerMode,
         suggestions: VideoAnalyzerOutput,
     ) -> Self {
         Self {
-            file_name: file_name.clone(),
+            file_name: file_name.to_owned(),
             analyze_time: OffsetDateTime::now_utc(),
             analyze_mode: VideoAnalyzerModeDesc::new(analyze_mode),
             suggestions,
