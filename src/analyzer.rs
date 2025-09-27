@@ -106,7 +106,7 @@ impl VideoAnalyzer {
 
 #[derive(Debug, Copy, Clone, Serialize_repr)]
 #[repr(u8)]
-pub enum MemeType {
+enum MemeType {
     Happiness = 0,
     Love = 1,
     Anger = 2,
@@ -117,11 +117,11 @@ pub enum MemeType {
 
 #[derive(Debug, Serialize)]
 #[repr(transparent)]
-pub struct MemeTypeDesc(String);
+struct MemeTypeDesc(String);
 
 impl MemeTypeDesc {
     #[inline]
-    pub fn new(meme_type: MemeType) -> Self {
+    fn new(meme_type: MemeType) -> Self {
         use MemeType::*;
 
         match meme_type {
@@ -136,7 +136,7 @@ impl MemeTypeDesc {
 }
 
 #[derive(Debug, Serialize)]
-pub struct VideoAnalyzerSuggestion {
+struct VideoAnalyzerSuggestion {
     start: u32,
     end: u32,
     meme_type: MemeType,
@@ -145,7 +145,7 @@ pub struct VideoAnalyzerSuggestion {
 
 impl VideoAnalyzerSuggestion {
     #[inline]
-    pub fn new(start: u32, end: u32, meme_type: MemeType) -> Self {
+    fn new(start: u32, end: u32, meme_type: MemeType) -> Self {
         Self {
             start,
             end,
