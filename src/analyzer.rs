@@ -99,7 +99,7 @@ impl VideoAnalyzer {
                 stderr
             );
 
-            Ok(VideoAnalyzerOutput::new(None))
+            Ok(VideoAnalyzerOutput::default())
         }
     }
 }
@@ -159,10 +159,15 @@ impl VideoAnalyzerSuggestion {
 #[repr(transparent)]
 pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
-impl VideoAnalyzerOutput {
-    #[inline]
-    pub fn new(suggestions: Option<Vec<VideoAnalyzerSuggestion>>) -> Self {
-        Self(suggestions)
+impl Default for VideoAnalyzerOutput {
+    fn default() -> Self {
+        Self(None)
+    }
+}
+
+impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
+    fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
+        Self(Some(suggestions))
     }
 }
 
@@ -186,6 +191,6 @@ impl From<InferenceOutput> for VideoAnalyzerOutput {
                 ))
             })
             .collect();
-        Self::new(Some(suggestions))
+        Self::from(suggestions)
     }
 }
