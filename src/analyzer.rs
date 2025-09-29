@@ -31,6 +31,7 @@ impl VideoAnalyzerModeDesc {
 
 #[derive(Debug, Clone)]
 pub struct VideoAnalyzerConfig {
+    video_name: String,
     video_path: PathBuf,
     analyze_mode: VideoAnalyzerMode,
 }
@@ -39,9 +40,16 @@ impl VideoAnalyzerConfig {
     #[inline]
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
+            video_name: String::from("video"),
             video_path: PathBuf::from(path.as_ref()),
             analyze_mode: VideoAnalyzerMode::Multi,
         }
+    }
+
+    #[inline]
+    pub fn video_name(&mut self, video_name: &str) -> &mut Self {
+        self.video_name = video_name.to_owned();
+        self
     }
 
     #[inline]
@@ -70,8 +78,9 @@ impl VideoAnalyzer {
         log::info!("starting inference procedure");
         log::debug!("executing inference.py under {:?}", command_dir);
         log::debug!(
-            "running command: ./.venv/bin/python inference.py --video_path {:?} --video_name video --output_dir {:?}",
+            "running command: ./.venv/bin/python inference.py --video_path {:?} --video_name {} --output_dir {:?}",
             &self.config.video_path,
+            &self.config.video_name,
             out_dir.path()
         );
 
@@ -81,7 +90,7 @@ impl VideoAnalyzer {
             .arg("--video_path")
             .arg(&self.config.video_path)
             .arg("--video_name")
-            .arg("video")
+            .arg(&self.config.video_name)
             .arg("--output_dir")
             .arg(out_dir.path())
             .output()

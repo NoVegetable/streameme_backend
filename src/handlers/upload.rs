@@ -73,8 +73,10 @@ pub async fn upload_video(
     }
 
     let mdata = form.metadata.into_inner();
+    let video_name = file_name.strip_suffix(".mp4").unwrap();
     let analyzer = VideoAnalyzerConfig::new(form.file.file.path())
         .analyze_mode(mdata.mode)
+        .video_name(video_name)
         .build();
     let output = analyzer.run().await?;
 
