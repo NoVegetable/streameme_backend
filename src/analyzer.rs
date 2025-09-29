@@ -69,6 +69,11 @@ impl VideoAnalyzer {
 
         log::info!("starting inference procedure");
         log::debug!("executing inference.py under {:?}", command_dir);
+        log::debug!(
+            "running command: ./.venv/bin/python inference.py --video_path {:?} --video_name video --output_dir {:?}",
+            &self.config.video_path,
+            out_dir.path()
+        );
 
         let output = Command::new("./.venv/bin/python")
             .current_dir(command_dir)
@@ -84,6 +89,10 @@ impl VideoAnalyzer {
 
         if output.status.success() {
             log::info!("inference procedure exited successfully");
+            log::debug!(
+                "parsing inference results from {:?}/suggestions.json",
+                out_dir.path()
+            );
             let mut inference_out_path = PathBuf::new();
             inference_out_path.push(out_dir.path());
             inference_out_path.push("suggestions.json");
