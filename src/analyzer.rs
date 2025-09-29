@@ -89,13 +89,10 @@ impl VideoAnalyzer {
 
         if output.status.success() {
             log::info!("inference procedure exited successfully");
-            log::debug!(
-                "parsing inference results from {:?}/suggestions.json",
-                out_dir.path()
-            );
             let mut inference_out_path = PathBuf::new();
             inference_out_path.push(out_dir.path());
             inference_out_path.push("suggestions.json");
+            log::debug!("parsing inference results from {:?}", inference_out_path);
             let inference_out_str = fs::read_to_string(&inference_out_path).await?;
             let inference_output: InferenceOutput = serde_json::from_str(&inference_out_str)?;
 
