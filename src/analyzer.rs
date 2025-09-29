@@ -94,7 +94,7 @@ impl VideoAnalyzer {
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
             log::error!(
-                "inference procedure exited within error; dumping stderr: {}",
+                "inference procedure exited within error; dumping stderr:\n{}",
                 stderr
             );
 
