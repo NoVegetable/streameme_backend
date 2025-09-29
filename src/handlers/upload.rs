@@ -8,7 +8,10 @@ use actix_web::{HttpResponse, Responder, post};
 use log;
 use mime;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use time::OffsetDateTime;
+
+const SUPPORTED_VIDEO_FORMATS: [&str; 3] = ["mp4", "avi", "mov"];
 
 #[derive(Debug, Deserialize)]
 struct UploadFormMetadata {
@@ -65,12 +68,18 @@ pub async fn upload_video(
             .essence_str()
     );
 
-    if !file_name.ends_with(".mp4") {
-        return Ok(HttpResponse::BadRequest().body("uploaded file should be a .mp4 video"));
-    }
+    let (video_name, ext) = split_at_extension(file_name);
+    let video_name = match ext {
+        Some(ext) if SUPPORTED_VIDEO_FORMATS.contains(&ext) => video_name.unwrap(),
+        _ => {
+            return Ok(HttpResponse::BadRequest().body(format!(
+                "supported video formats are: {}",
+                SUPPORTED_VIDEO_FORMATS.join(", ")
+            )));
+        }
+    };
 
     let mdata = form.metadata.into_inner();
-    let video_name = file_name.strip_suffix(".mp4").unwrap();
     let analyzer = VideoAnalyzerConfig::new(form.file.file.path())
         .analyze_mode(mdata.mode)
         .video_name(video_name)
@@ -80,6 +89,14 @@ pub async fn upload_video(
     let res = UploadResponse::new(file_name, mdata.mode, output);
 
     Ok(HttpResponse::Ok().json(res))
+}
+
+fn split_at_extension(file_name: &str) -> (Option<&str>, Option<&str>) {
+    let path = Path::new(file_name);
+    (
+        path.file_stem().map(|os| os.to_str().unwrap()),
+        path.extension().map(|os| os.to_str().unwrap()),
+    )
 }
 
 pub fn config(cfg: &mut ServiceConfig) {
