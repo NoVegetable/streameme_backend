@@ -65,9 +65,10 @@ pub struct VideoAnalyzer {
 impl VideoAnalyzer {
     pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
-
         let command_dir = fs::canonicalize("../streameme_inference").await?;
-        log::info!("executing inference.py under {:?}", command_dir);
+
+        log::info!("starting inference procedure");
+        log::debug!("executing inference.py under {:?}", command_dir);
 
         let output = Command::new("./.venv/bin/python")
             .current_dir(command_dir)
@@ -82,7 +83,7 @@ impl VideoAnalyzer {
             .await?;
 
         if output.status.success() {
-            log::info!("inference script exited successfully");
+            log::info!("inference procedure exited successfully");
             let mut inference_out_path = PathBuf::new();
             inference_out_path.push(out_dir.path());
             inference_out_path.push("suggestions.json");
@@ -93,7 +94,7 @@ impl VideoAnalyzer {
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
             log::error!(
-                "inference script exited within error; dumping stderr: {}",
+                "inference procedure exited within error; dumping stderr: {}",
                 stderr
             );
 
