@@ -65,6 +65,13 @@ pub async fn upload_video(
             .essence_str()
     );
 
+    match file_name.split('.').last() {
+        Some(ext) if ext == "mp4" => {}
+        _ => {
+            return Ok(HttpResponse::BadRequest().body("uploaded file should be a .mp4 video"));
+        }
+    }
+
     let mdata = form.metadata.into_inner();
     let analyzer = VideoAnalyzerConfig::new(form.file.file.path())
         .analyze_mode(mdata.mode)
