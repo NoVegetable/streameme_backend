@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use streameme_backend::handlers;
 use tempfile::TempDir;
 
-const UPLOAD_SIZE_LIMIT: usize = 2 * 1024 * 1024 * 1024; // 2 GB
+const UPLOAD_SIZE_LIMIT: usize = 2 * 1024 * 1024 * 1024; // 2 GiB
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
