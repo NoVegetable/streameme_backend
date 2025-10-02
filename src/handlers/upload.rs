@@ -69,14 +69,13 @@ pub async fn upload_video(
     );
 
     let (video_name, ext) = split_at_extension(file_name);
-    let video_name = match ext {
-        Some(ext) if SUPPORTED_VIDEO_FORMATS.contains(&ext) => video_name.unwrap(),
-        _ => {
-            return Ok(HttpResponse::BadRequest().body(format!(
-                "supported video formats are: {}",
-                SUPPORTED_VIDEO_FORMATS.join(", ")
-            )));
-        }
+    let video_name = if ext.is_some_and(|ext| SUPPORTED_VIDEO_FORMATS.contains(&ext)) {
+        video_name.unwrap()
+    } else {
+        return Ok(HttpResponse::BadRequest().body(format!(
+            "supported video formats are: {}",
+            SUPPORTED_VIDEO_FORMATS.join(", ")
+        )));
     };
 
     let mdata = form.metadata.into_inner();
