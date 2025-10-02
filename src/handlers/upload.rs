@@ -68,9 +68,10 @@ pub async fn upload_video(
             .essence_str()
     );
 
-    let (video_name, ext) = split_at_extension(file_name);
-    let video_name = if ext.is_some_and(|ext| SUPPORTED_VIDEO_FORMATS.contains(&ext)) {
-        video_name.unwrap()
+    let video_name = if let (Some(video_name), Some(ext)) = split_at_extension(file_name)
+        && SUPPORTED_VIDEO_FORMATS.contains(&ext)
+    {
+        video_name
     } else {
         return Ok(HttpResponse::BadRequest().body(format!(
             "supported video formats are: {}",
