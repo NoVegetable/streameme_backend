@@ -48,7 +48,7 @@ impl VideoAnalyzerConfig {
 
     #[inline]
     pub fn video_name(&mut self, video_name: &str) -> &mut Self {
-        self.video_name = video_name.to_owned();
+        video_name.clone_into(&mut self.video_name);
         self
     }
 
@@ -76,12 +76,12 @@ impl VideoAnalyzer {
         let command_dir = fs::canonicalize("../streameme_inference").await?;
 
         log::info!("starting inference procedure");
-        log::debug!("executing inference.py under {:?}", command_dir);
+        log::debug!("executing inference.py under {}", command_dir.display());
         log::debug!(
-            "running command: ./.venv/bin/python inference.py --video_path {:?} --video_name {} --output_dir {:?}",
-            &self.config.video_path,
+            "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --output_dir {}",
+            self.config.video_path.display(),
             &self.config.video_name,
-            out_dir.path()
+            out_dir.path().display()
         );
 
         let output = Command::new("./.venv/bin/python")
@@ -101,7 +101,10 @@ impl VideoAnalyzer {
             let mut inference_out_path = PathBuf::new();
             inference_out_path.push(out_dir.path());
             inference_out_path.push("suggestions.json");
-            log::debug!("parsing inference results from {:?}", inference_out_path);
+            log::debug!(
+                "parsing inference results from {}",
+                inference_out_path.display()
+            );
             let inference_out_str = fs::read_to_string(&inference_out_path).await?;
             let inference_output: InferenceOutput = serde_json::from_str(&inference_out_str)?;
 

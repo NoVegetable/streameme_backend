@@ -51,11 +51,8 @@ impl UploadResponse {
 pub async fn upload_video(
     MultipartForm(form): MultipartForm<UploadForm>,
 ) -> Result<impl Responder, Error> {
-    let file_name = match form.file.file_name.as_ref() {
-        Some(f) => f,
-        None => {
-            return Ok(HttpResponse::BadRequest().body("file name is missing"));
-        }
+    let Some(file_name) = form.file.file_name.as_ref() else {
+        return Ok(HttpResponse::BadRequest().body("file name is missing"));
     };
 
     log::info!(
