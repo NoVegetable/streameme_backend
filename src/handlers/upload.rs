@@ -1,6 +1,7 @@
 use crate::analyzer::{
     VideoAnalyzerConfig, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
 };
+use crate::handlers::utils;
 use actix_multipart::form::{MultipartForm, json::Json as MpJson, tempfile::TempFile};
 use actix_web::error::Error;
 use actix_web::web::ServiceConfig;
@@ -8,7 +9,6 @@ use actix_web::{HttpResponse, Responder, post};
 use log;
 use mime;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use time::OffsetDateTime;
 
 const SUPPORTED_VIDEO_FORMATS: [&str; 3] = ["mp4", "avi", "mov"];
@@ -65,10 +65,10 @@ pub async fn upload_video(
             .essence_str()
     );
 
-    let video_name = if let (Some(video_name), Some(ext)) = split_at_extension(file_name)
-        && SUPPORTED_VIDEO_FORMATS.contains(&ext)
+    let video_name = if let (Some(video_name), Some(ext)) = utils::split_file_name(file_name)
+        && SUPPORTED_VIDEO_FORMATS.contains(&ext.to_str().unwrap())
     {
-        video_name
+        video_name.to_str().unwrap()
     } else {
         return Ok(HttpResponse::BadRequest().body(format!(
             "supported video formats are: {}",
@@ -86,14 +86,6 @@ pub async fn upload_video(
     let res = UploadResponse::new(file_name, mdata.mode, output);
 
     Ok(HttpResponse::Ok().json(res))
-}
-
-fn split_at_extension(file_name: &str) -> (Option<&str>, Option<&str>) {
-    let path = Path::new(file_name);
-    (
-        path.file_stem().map(|os| os.to_str().unwrap()),
-        path.extension().map(|os| os.to_str().unwrap()),
-    )
 }
 
 pub fn config(cfg: &mut ServiceConfig) {
