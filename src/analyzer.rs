@@ -20,7 +20,7 @@ pub(crate) struct VideoAnalyzerModeDesc(String);
 
 impl VideoAnalyzerModeDesc {
     #[inline]
-    pub fn new(mode: VideoAnalyzerMode) -> Self {
+    pub(crate) fn new(mode: VideoAnalyzerMode) -> Self {
         use VideoAnalyzerMode::*;
         Self(match mode {
             Binary => String::from("binary"),
