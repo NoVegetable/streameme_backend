@@ -9,14 +9,14 @@ use tokio::process::Command;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
-pub enum VideoAnalyzerMode {
+pub(crate) enum VideoAnalyzerMode {
     Binary = 0,
     Multi = 1,
 }
 
 #[derive(Debug, Serialize)]
 #[repr(transparent)]
-pub struct VideoAnalyzerModeDesc(String);
+pub(crate) struct VideoAnalyzerModeDesc(String);
 
 impl VideoAnalyzerModeDesc {
     #[inline]
@@ -30,7 +30,7 @@ impl VideoAnalyzerModeDesc {
 }
 
 #[derive(Debug, Clone)]
-pub struct VideoAnalyzerConfig {
+pub(crate) struct VideoAnalyzerConfig {
     video_name: String,
     video_path: PathBuf,
     analyze_mode: VideoAnalyzerMode,
@@ -38,7 +38,7 @@ pub struct VideoAnalyzerConfig {
 
 impl VideoAnalyzerConfig {
     #[inline]
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub(crate) fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
             video_name: String::from("video"),
             video_path: PathBuf::from(path.as_ref()),
@@ -47,31 +47,31 @@ impl VideoAnalyzerConfig {
     }
 
     #[inline]
-    pub fn video_name(&mut self, video_name: &str) -> &mut Self {
+    pub(crate) fn video_name(&mut self, video_name: &str) -> &mut Self {
         video_name.clone_into(&mut self.video_name);
         self
     }
 
     #[inline]
-    pub fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
+    pub(crate) fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
         self.analyze_mode = analyze_mode;
         self
     }
 
     #[inline]
-    pub fn build(&self) -> VideoAnalyzer {
+    pub(crate) fn build(&self) -> VideoAnalyzer {
         VideoAnalyzer {
             config: self.clone(),
         }
     }
 }
 
-pub struct VideoAnalyzer {
+pub(crate) struct VideoAnalyzer {
     config: VideoAnalyzerConfig,
 }
 
 impl VideoAnalyzer {
-    pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
+    pub(crate) async fn run(self) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
         let command_dir = fs::canonicalize("../streameme_inference").await?;
 
@@ -174,7 +174,7 @@ impl VideoAnalyzerSuggestion {
 
 #[derive(Debug, Default, Serialize)]
 #[repr(transparent)]
-pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
+pub(crate) struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
 impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
     fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {

@@ -2,17 +2,17 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[repr(transparent)]
-pub struct InferenceOutput(Vec<InferenceOutputUnit>);
+pub(crate) struct InferenceOutput(Vec<InferenceOutputUnit>);
 
 impl InferenceOutput {
     #[inline]
-    pub fn into_inner(self) -> Vec<InferenceOutputUnit> {
+    pub(crate) fn into_inner(self) -> Vec<InferenceOutputUnit> {
         self.0
     }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
-pub struct InferenceOutputUnit {
+pub(crate) struct InferenceOutputUnit {
     pub start: u32,
     pub end: u32,
     pub suggestion: String,

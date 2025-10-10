@@ -1,5 +1,5 @@
-pub mod upload;
-pub mod utils;
+mod upload;
+mod utils;
 
 use actix_web::web::ServiceConfig;
 

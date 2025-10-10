@@ -33,7 +33,7 @@ struct UploadResponse {
 }
 
 impl UploadResponse {
-    pub fn new(
+    fn new(
         file_name: &str,
         analyze_mode: VideoAnalyzerMode,
         suggestions: VideoAnalyzerOutput,
@@ -48,7 +48,7 @@ impl UploadResponse {
 }
 
 #[post("/upload")]
-pub async fn upload_video(
+async fn upload_video(
     MultipartForm(form): MultipartForm<UploadForm>,
 ) -> Result<impl Responder, Error> {
     let Some(file_name) = form.file.file_name.as_ref() else {
@@ -88,6 +88,6 @@ pub async fn upload_video(
     Ok(HttpResponse::Ok().json(res))
 }
 
-pub fn config(cfg: &mut ServiceConfig) {
+pub(crate) fn config(cfg: &mut ServiceConfig) {
     cfg.service(upload_video);
 }
