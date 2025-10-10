@@ -88,6 +88,6 @@ async fn upload_video(
     Ok(HttpResponse::Ok().json(res))
 }
 
-pub(crate) fn config(cfg: &mut ServiceConfig) {
+pub fn config(cfg: &mut ServiceConfig) {
     cfg.service(upload_video);
 }

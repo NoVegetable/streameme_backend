@@ -7,6 +7,8 @@ use std::path::Path;
 ///
 /// # Examples
 /// ```ignore
+/// // This API is supposed to be accessed by the modules defined under module `crate::handlers`
+///
 /// use crate::handlers::utils::split_file_name;
 /// use std::ffi::OsStr;
 ///
@@ -14,10 +16,8 @@ use std::path::Path;
 /// assert_eq!(split_file_name("/.tmp123ABC"), (Some(OsStr::new(".tmp123ABC")), None));
 /// assert_eq!(split_file_name("/tmp/no_ext"), (Some(OsStr::new("no_ext")), None));
 /// assert_eq!(split_file_name("secret.tar.gz"), (Some(OsStr::new("secret.tar")), Some(OsStr::new("gz"))));
-/// ````
-pub(crate) fn split_file_name<P: AsRef<Path> + ?Sized>(
-    file_name: &P,
-) -> (Option<&OsStr>, Option<&OsStr>) {
+/// ```
+pub fn split_file_name<P: AsRef<Path> + ?Sized>(file_name: &P) -> (Option<&OsStr>, Option<&OsStr>) {
     let path = file_name.as_ref();
     (path.file_stem(), path.extension())
 }

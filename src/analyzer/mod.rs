@@ -1,4 +1,7 @@
-use crate::inference::InferenceOutput;
+/// This is a module for parsing output from the inference procedure.
+mod inference;
+
+use inference::InferenceOutput;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::io;
@@ -9,18 +12,18 @@ use tokio::process::Command;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
-pub(crate) enum VideoAnalyzerMode {
+pub enum VideoAnalyzerMode {
     Binary = 0,
     Multi = 1,
 }
 
 #[derive(Debug, Serialize)]
 #[repr(transparent)]
-pub(crate) struct VideoAnalyzerModeDesc(String);
+pub struct VideoAnalyzerModeDesc(String);
 
 impl VideoAnalyzerModeDesc {
     #[inline]
-    pub(crate) fn new(mode: VideoAnalyzerMode) -> Self {
+    pub fn new(mode: VideoAnalyzerMode) -> Self {
         use VideoAnalyzerMode::*;
         Self(match mode {
             Binary => String::from("binary"),
@@ -30,7 +33,7 @@ impl VideoAnalyzerModeDesc {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct VideoAnalyzerConfig {
+pub struct VideoAnalyzerConfig {
     video_name: String,
     video_path: PathBuf,
     analyze_mode: VideoAnalyzerMode,
@@ -38,7 +41,7 @@ pub(crate) struct VideoAnalyzerConfig {
 
 impl VideoAnalyzerConfig {
     #[inline]
-    pub(crate) fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
             video_name: String::from("video"),
             video_path: PathBuf::from(path.as_ref()),
@@ -47,31 +50,50 @@ impl VideoAnalyzerConfig {
     }
 
     #[inline]
-    pub(crate) fn video_name(&mut self, video_name: &str) -> &mut Self {
+    pub fn video_name(&mut self, video_name: &str) -> &mut Self {
         video_name.clone_into(&mut self.video_name);
         self
     }
 
     #[inline]
-    pub(crate) fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
+    pub fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
         self.analyze_mode = analyze_mode;
         self
     }
 
     #[inline]
-    pub(crate) fn build(&self) -> VideoAnalyzer {
+    pub fn build(&self) -> VideoAnalyzer {
         VideoAnalyzer {
             config: self.clone(),
         }
     }
 }
 
-pub(crate) struct VideoAnalyzer {
+/// A harness of the video analysis pipeline.
+///
+/// A [`VideoAnalyzer`] instance needs to be constructed by calling
+/// [`build`](VideoAnalyzerConfig::build) method of a [`VideoAnalyzerConfig`] instance. We didn't
+/// provide a way to construct an instance of this type in another way.
+pub struct VideoAnalyzer {
     config: VideoAnalyzerConfig,
 }
 
 impl VideoAnalyzer {
-    pub(crate) async fn run(self) -> io::Result<VideoAnalyzerOutput> {
+    /// This is the main API of [`VideoAnalyzer`]. It runs the whole video analysis pipeline and
+    /// returns the analysis results.
+    ///
+    /// This method returns a [`VideoAnalyzerOutput`] instance. If the inference procedure ends
+    /// successfully, it wraps the analysis results; otherwise, it simply wraps a [`None`] inside.
+    ///
+    /// Note that the inference procedure crashing won't make this function failed. That is, even
+    /// if the inference procedure exits within error, this function still returns an [`Ok`] that
+    /// contains a [`VideoAnalyzerOutput`], which contains a [`None`]. This helps distinguishing
+    /// between the failure of the inference procedure and the function itself.
+    ///
+    /// # Errors
+    /// An error is returned if the inference script can not be found, the inference procedure
+    /// can not be spawned for whatever reason, or the analysis results aren't parsed successfully.
+    pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
         let command_dir = fs::canonicalize("../streameme_inference").await?;
 
@@ -174,7 +196,7 @@ impl VideoAnalyzerSuggestion {
 
 #[derive(Debug, Default, Serialize)]
 #[repr(transparent)]
-pub(crate) struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
+pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
 impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
     fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
