@@ -2,11 +2,12 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 /// Returns the file stem and file extension parts of `file_name`. This internally uses
-/// [`std::path::Path::file_stem`] and [`std::path::Path::extension`].
+/// [`std::path::Path::file_stem`] and [`std::path::Path::extension`]. See their document for how
+/// each item would be extracted.
 ///
 /// # Examples
-/// ```
-/// use streameme_backend::handlers::utils::split_file_name;
+/// ```ignore
+/// use crate::handlers::utils::split_file_name;
 /// use std::ffi::OsStr;
 ///
 /// assert_eq!(split_file_name("/tmp/foo.rs"), (Some(OsStr::new("foo")), Some(OsStr::new("rs"))));
@@ -14,7 +15,9 @@ use std::path::Path;
 /// assert_eq!(split_file_name("/tmp/no_ext"), (Some(OsStr::new("no_ext")), None));
 /// assert_eq!(split_file_name("secret.tar.gz"), (Some(OsStr::new("secret.tar")), Some(OsStr::new("gz"))));
 /// ````
-pub fn split_file_name<P: AsRef<Path> + ?Sized>(file_name: &P) -> (Option<&OsStr>, Option<&OsStr>) {
+pub(crate) fn split_file_name<P: AsRef<Path> + ?Sized>(
+    file_name: &P,
+) -> (Option<&OsStr>, Option<&OsStr>) {
     let path = file_name.as_ref();
     (path.file_stem(), path.extension())
 }
