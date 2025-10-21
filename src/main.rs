@@ -5,7 +5,7 @@ use actix_web::{App, HttpServer, middleware};
 use clap::{Arg, Command, value_parser};
 use env_logger::Env;
 use std::net::Ipv4Addr;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use streameme_backend::handlers;
 use tempfile::TempDir;
 
@@ -27,11 +27,10 @@ async fn main() -> std::io::Result<()> {
         .get_matches();
     let port = *matches.get_one::<u16>("port").unwrap();
 
-    let tmp_dir = Arc::new(Mutex::new(TempDir::new_in(".")?));
+    let tmp_dir = Arc::new(TempDir::new_in(".")?);
     let tmp_dir_2 = tmp_dir.clone();
     HttpServer::new(move || {
-        let tmp_dir = tmp_dir_2.lock().unwrap();
-        let path = tmp_dir.path();
+        let path = tmp_dir_2.path();
         App::new()
             .wrap(
                 // FIXME: This is not secure, it should be fixed this later.
