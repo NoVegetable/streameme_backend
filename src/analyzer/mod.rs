@@ -62,12 +62,15 @@ impl VideoAnalyzerConfig {
     }
 }
 
+/// An analysis task.
 pub struct Task {
     received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
     config: VideoAnalyzerConfig,
 }
 
 impl Task {
+    /// Creates a new [`Task`].
+    #[inline]
     pub fn new(
         config: VideoAnalyzerConfig,
         received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
@@ -75,6 +78,8 @@ impl Task {
         Self { received, config }
     }
 
+    /// Sends the task to the analyzer using `analyzer`.
+    #[inline]
     pub fn spawn(self, analyzer: &mpsc::Sender<Task>) -> Result<(), mpsc::SendError<Self>> {
         analyzer.send(self)
     }
@@ -82,18 +87,20 @@ impl Task {
 
 /// A harness of the video analysis pipeline.
 ///
-/// A [`VideoAnalyzer`] instance needs to be constructed by calling
-/// [`build`](VideoAnalyzerConfig::build) method of a [`VideoAnalyzerConfig`] instance. We didn't
-/// provide a way to construct an instance of this type in another way.
+/// An instance of [`VideoAnalyzer`] should be run in a background thread.
 pub struct VideoAnalyzer {
     scheduled: mpsc::Receiver<Task>,
 }
 
 impl VideoAnalyzer {
+    /// Creates an [`VideoAnalyzer`] instance.
+    #[inline]
     pub fn new(scheduled: mpsc::Receiver<Task>) -> Self {
         Self { scheduled }
     }
 
+    /// Starts receving analysis requests. The requests are processed sequentially due to limited
+    /// computing resources.
     pub fn run(self) {
         while let Ok(task) = self.scheduled.recv() {
             let output = Self::analyze(&task);
@@ -114,7 +121,7 @@ impl VideoAnalyzer {
     /// # Errors
     /// An error is returned if the inference script can not be found, the inference procedure
     /// can not be spawned for whatever reason, or the analysis results aren't parsed successfully.
-    pub fn analyze(task: &Task) -> io::Result<VideoAnalyzerOutput> {
+    fn analyze(task: &Task) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
         let command_dir = std::fs::canonicalize("../streameme_inference")?;
 

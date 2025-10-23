@@ -30,19 +30,23 @@ async fn main() -> std::io::Result<()> {
         .get_matches();
     let port = *matches.get_one::<u16>("port").unwrap();
 
+    // Initialize an analyzer on another thread, and setup a channel for queueing analysis requests.
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         VideoAnalyzer::new(rx).run();
     });
     let analyzer = web::Data::new(tx);
 
+    // Create a temporary directory. This is for the purpose of storing uploaded videos and
+    // communicating with the inference script. The temporary directory is deleted automatically
+    // when the `TempDir` instance is dropped.
     let tmp_dir = Arc::new(TempDir::new_in(".")?);
     let tmp_dir_2 = tmp_dir.clone();
     HttpServer::new(move || {
         let path = tmp_dir_2.path();
         App::new()
             .wrap(
-                // FIXME: This is not secure, it should be fixed this later.
+                // FIXME: This is not secure, it should be fixed in the future.
                 Cors::default()
                     .allow_any_origin()
                     .allow_any_method()

@@ -69,6 +69,7 @@ async fn upload_video(
             .essence_str()
     );
 
+    // Checks if the video format is supported.
     let video_name = if let (Some(video_name), Some(ext)) = utils::split_file_name(file_name)
         && SUPPORTED_VIDEO_FORMATS.contains(&ext.to_str().unwrap())
     {
@@ -80,25 +81,33 @@ async fn upload_video(
         )));
     };
 
+    // Constructs analysis task. We need to complete the analysis config and setup a oneshot channel
+    // for receiving analysis resutls. All the stuff is then wrapped into a `Task` instance.
     let mdata = form.metadata.into_inner();
     let mut config = VideoAnalyzerConfig::new(form.file.file.path());
     config.analyze_mode(mdata.mode).video_name(video_name);
-
-    log::debug!("sending analysis task to the analyzer");
     let (tx, rx) = oneshot::channel();
     let task = Task::new(config, tx);
-    if let Err(e) = task.spawn(&analyzer) {
+
+    // Sends the task to the analyzer.
+    log::debug!("sending analysis task to the analyzer");
+    if task.spawn(&analyzer).is_err() {
         log::debug!(
-            "failed to send the task, which indicates that the receiver half might have been deallocated"
+            "failed to send task to the analyzer, indicating that the receiving-half might have been dropped"
         );
-        return Ok(HttpResponse::InternalServerError().body(e.to_string()));
+        return Ok(HttpResponse::InternalServerError().body("internal communication broken"));
     }
 
+    // Awaits the analysis results and then constructs the response.
     if let Ok(output) = rx.await {
-        let res = UploadResponse::new(file_name, mdata.mode, output?);
+        let output = output?;
+        let res = UploadResponse::new(file_name, mdata.mode, output);
         Ok(HttpResponse::Ok().json(res))
     } else {
-        Ok(HttpResponse::InternalServerError().body(""))
+        log::debug!(
+            "failed to receive analysis results from the analyzer, indicating that the sending-half might have been dropped"
+        );
+        Ok(HttpResponse::InternalServerError().body("internal communication broken"))
     }
 }
 
