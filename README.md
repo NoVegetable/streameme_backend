@@ -34,7 +34,7 @@ This API receives `multipart/form-data` requests, which should contain two field
     "mode" should be either 0 (binary) or 1 (multi). However, binary mode is still not supported at the time of writing, thus setting `mode` to 0 still invoke the same inference procedure as setting it to 1.
 
 - `file`: the file part, which should contains the video file to be analyzed.
-  - Currently, the size limit for the video is set to **2 GB**. The backend will return a "Payload error" message for any video beyonds this limit.
+  - Currently, the size limit for the video is set to **2 GiB**. The backend will return a "Payload error" message for any video beyonds this limit.
 
 This API can be tested with `curl`:
 ```
