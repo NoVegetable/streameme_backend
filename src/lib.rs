@@ -1,2 +1,2 @@
-mod analyzer;
+pub mod analyzer;
 pub mod handlers;

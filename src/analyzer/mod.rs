@@ -6,9 +6,9 @@ use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 use tempfile::TempDir;
-use tokio::fs;
-use tokio::process::Command;
+use tokio::sync::oneshot;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
@@ -60,12 +60,23 @@ impl VideoAnalyzerConfig {
         self.analyze_mode = analyze_mode;
         self
     }
+}
 
-    #[inline]
-    pub fn build(&self) -> VideoAnalyzer {
-        VideoAnalyzer {
-            config: self.clone(),
-        }
+pub struct Task {
+    received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
+    config: VideoAnalyzerConfig,
+}
+
+impl Task {
+    pub fn new(
+        config: VideoAnalyzerConfig,
+        received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
+    ) -> Self {
+        Self { received, config }
+    }
+
+    pub fn spawn(self, analyzer: &mpsc::Sender<Task>) -> Result<(), mpsc::SendError<Self>> {
+        analyzer.send(self)
     }
 }
 
@@ -75,12 +86,22 @@ impl VideoAnalyzerConfig {
 /// [`build`](VideoAnalyzerConfig::build) method of a [`VideoAnalyzerConfig`] instance. We didn't
 /// provide a way to construct an instance of this type in another way.
 pub struct VideoAnalyzer {
-    config: VideoAnalyzerConfig,
+    scheduled: mpsc::Receiver<Task>,
 }
 
 impl VideoAnalyzer {
-    /// This is the main API of [`VideoAnalyzer`]. It runs the whole video analysis pipeline and
-    /// returns the analysis results.
+    pub fn new(scheduled: mpsc::Receiver<Task>) -> Self {
+        Self { scheduled }
+    }
+
+    pub fn run(self) {
+        while let Ok(task) = self.scheduled.recv() {
+            let output = Self::analyze(&task);
+            let _ = task.received.send(output);
+        }
+    }
+
+    /// This API dirves the whole video analysis pipeline and returns the analysis results.
     ///
     /// This method returns a [`VideoAnalyzerOutput`] instance. If the inference procedure ends
     /// successfully, it wraps the analysis results; otherwise, it simply wraps a [`None`] inside.
@@ -93,30 +114,29 @@ impl VideoAnalyzer {
     /// # Errors
     /// An error is returned if the inference script can not be found, the inference procedure
     /// can not be spawned for whatever reason, or the analysis results aren't parsed successfully.
-    pub async fn run(self) -> io::Result<VideoAnalyzerOutput> {
+    pub fn analyze(task: &Task) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
-        let command_dir = fs::canonicalize("../streameme_inference").await?;
+        let command_dir = std::fs::canonicalize("../streameme_inference")?;
 
         log::info!("starting inference procedure");
         log::debug!("executing inference.py under {}", command_dir.display());
         log::debug!(
             "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --output_dir {}",
-            self.config.video_path.display(),
-            &self.config.video_name,
+            task.config.video_path.display(),
+            &task.config.video_name,
             out_dir.path().display()
         );
 
-        let output = Command::new("./.venv/bin/python")
+        let output = std::process::Command::new("./.venv/bin/python")
             .current_dir(command_dir)
             .arg("inference.py")
             .arg("--video_path")
-            .arg(&self.config.video_path)
+            .arg(&task.config.video_path)
             .arg("--video_name")
-            .arg(&self.config.video_name)
+            .arg(&task.config.video_name)
             .arg("--output_dir")
             .arg(out_dir.path())
-            .output()
-            .await?;
+            .output()?;
 
         if output.status.success() {
             log::info!("inference procedure exited successfully");
@@ -127,7 +147,7 @@ impl VideoAnalyzer {
                 "parsing inference results from {}",
                 inference_out_path.display()
             );
-            let inference_out_str = fs::read_to_string(&inference_out_path).await?;
+            let inference_out_str = std::fs::read_to_string(&inference_out_path)?;
             let inference_output: InferenceOutput = serde_json::from_str(&inference_out_str)?;
 
             Ok(VideoAnalyzerOutput::from(inference_output))
