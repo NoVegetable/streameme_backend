@@ -46,7 +46,7 @@ The API returns responses in the form like this:
 ```
 {
     "file_name": "video.mp4",
-    "analyze_time": "2025-09-22 00:21:22.626625114 +00:00:00", 
+    "analyze_time": "2025-09-22T00:21:22.626Z", 
     "analyze_mode": "multi",
     "suggestions": [
         {
