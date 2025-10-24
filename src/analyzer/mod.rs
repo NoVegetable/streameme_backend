@@ -11,8 +11,6 @@ use std::sync::mpsc;
 use tempfile::TempDir;
 use tokio::sync::oneshot;
 
-type VideoAnalyzerBuffer = mpsc::Sender<SpawnedTask>;
-
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
 pub enum VideoAnalyzerMode {
@@ -91,7 +89,7 @@ impl Task {
     #[inline]
     pub fn spawn(
         self,
-        analyzer: &mpsc::Sender<SpawnedTask>,
+        analyzer: &VideoAnalyzerBuffer,
     ) -> Result<SpawnedTaskHandle, mpsc::SendError<Self>> {
         let (tx, rx) = oneshot::channel();
         let spawned = SpawnedTask {
@@ -107,14 +105,14 @@ impl Task {
 
 /// An analysis task to be sent to the analyzer. It wraps a [`Task`] inside and uses message
 /// passing internally.
-pub struct SpawnedTask {
+struct SpawnedTask {
     task: Task,
     sender: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
 }
 
 impl SpawnedTask {
     #[inline]
-    fn spawn(self, analyzer: &mpsc::Sender<SpawnedTask>) -> Result<(), mpsc::SendError<Self>> {
+    fn spawn(self, analyzer: &VideoAnalyzerBuffer) -> Result<(), mpsc::SendError<Self>> {
         analyzer.send(self)
     }
 }
@@ -136,6 +134,17 @@ impl SpawnedTaskHandle {
     }
 }
 
+/// A sender to the analyzer's task buffer.
+#[repr(transparent)]
+pub struct VideoAnalyzerBuffer(mpsc::Sender<SpawnedTask>);
+
+impl VideoAnalyzerBuffer {
+    #[inline]
+    fn send(&self, task: SpawnedTask) -> Result<(), mpsc::SendError<SpawnedTask>> {
+        self.0.send(task)
+    }
+}
+
 /// A harness of the video analysis pipeline.
 ///
 /// An instance of [`VideoAnalyzer`] should be run in a background thread.
@@ -148,7 +157,7 @@ impl VideoAnalyzer {
     #[inline]
     pub fn new() -> (Self, VideoAnalyzerBuffer) {
         let (tx, rx) = mpsc::channel();
-        (Self { scheduled: rx }, tx)
+        (Self { scheduled: rx }, VideoAnalyzerBuffer(tx))
     }
 
     /// Starts receving analysis requests. The requests are processed sequentially due to limited

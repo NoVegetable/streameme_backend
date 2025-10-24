@@ -1,5 +1,5 @@
 use crate::analyzer::{
-    SpawnedTask, TaskConfig, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
+    TaskConfig, VideoAnalyzerBuffer, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
 };
 use crate::handlers::utils;
 use actix_multipart::form::{MultipartForm, json::Json as MpJson, tempfile::TempFile};
@@ -9,7 +9,6 @@ use actix_web::{HttpResponse, Responder, post};
 use log;
 use mime;
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc;
 use time::OffsetDateTime;
 
 const SUPPORTED_VIDEO_FORMATS: [&str; 3] = ["mp4", "avi", "mov"];
@@ -50,7 +49,7 @@ impl UploadResponse {
 
 #[post("/upload")]
 async fn upload_video(
-    analyzer: web::Data<mpsc::Sender<SpawnedTask>>,
+    analyzer: web::Data<VideoAnalyzerBuffer>,
     MultipartForm(form): MultipartForm<UploadForm>,
 ) -> Result<impl Responder, Error> {
     let Some(file_name) = form.file.file_name.as_ref() else {
