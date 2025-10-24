@@ -11,6 +11,14 @@ use mime;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
+// Makes `OffsetDateTime` serialized to a format that can be parsed by JS Date.
+// Reference: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date#date_time_string_format
+time::serde::format_description!(
+    js_format,
+    OffsetDateTime,
+    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+);
+
 const SUPPORTED_VIDEO_FORMATS: [&str; 3] = ["mp4", "avi", "mov"];
 
 #[derive(Debug, Deserialize)]
@@ -27,6 +35,7 @@ struct UploadForm {
 #[derive(Debug, Serialize)]
 struct UploadResponse {
     file_name: String,
+    #[serde(with = "js_format")]
     analyze_time: OffsetDateTime,
     analyze_mode: VideoAnalyzerModeDesc,
     suggestions: VideoAnalyzerOutput,
