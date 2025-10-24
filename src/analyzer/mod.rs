@@ -13,14 +13,14 @@ use tokio::sync::oneshot;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
-pub enum VideoAnalyzerMode {
+pub(crate) enum VideoAnalyzerMode {
     Binary = 0,
     Multi = 1,
 }
 
 #[derive(Debug, Serialize)]
 #[repr(transparent)]
-pub struct VideoAnalyzerModeDesc(String);
+pub(crate) struct VideoAnalyzerModeDesc(String);
 
 impl VideoAnalyzerModeDesc {
     #[inline]
@@ -34,7 +34,7 @@ impl VideoAnalyzerModeDesc {
 }
 
 #[derive(Debug, Clone)]
-pub struct TaskConfig {
+pub(crate) struct TaskConfig {
     video_name: String,
     video_path: PathBuf,
     analyze_mode: VideoAnalyzerMode,
@@ -69,7 +69,7 @@ impl TaskConfig {
 }
 
 /// An analysis task.
-pub struct Task {
+pub(crate) struct Task {
     config: TaskConfig,
 }
 
@@ -118,7 +118,7 @@ impl SpawnedTask {
 }
 
 /// A handle to the spawned task. This can be used to receive the analysis results.
-pub struct SpawnedTaskHandle {
+pub(crate) struct SpawnedTaskHandle {
     receiver: oneshot::Receiver<io::Result<VideoAnalyzerOutput>>,
 }
 
@@ -284,7 +284,7 @@ impl VideoAnalyzerSuggestion {
 
 #[derive(Debug, Default, Serialize)]
 #[repr(transparent)]
-pub struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
+pub(crate) struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
 impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
     fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
