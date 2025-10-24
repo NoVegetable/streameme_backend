@@ -4,11 +4,14 @@ mod inference;
 use inference::InferenceOutput;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::fmt::Debug;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use tempfile::TempDir;
 use tokio::sync::oneshot;
+
+type VideoAnalyzerBuffer = mpsc::Sender<SpawnedTask>;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
@@ -33,13 +36,13 @@ impl VideoAnalyzerModeDesc {
 }
 
 #[derive(Debug, Clone)]
-pub struct VideoAnalyzerConfig {
+pub struct TaskConfig {
     video_name: String,
     video_path: PathBuf,
     analyze_mode: VideoAnalyzerMode,
 }
 
-impl VideoAnalyzerConfig {
+impl TaskConfig {
     #[inline]
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
@@ -60,28 +63,76 @@ impl VideoAnalyzerConfig {
         self.analyze_mode = analyze_mode;
         self
     }
+
+    #[inline]
+    pub fn build(&self) -> Task {
+        Task::new(self.clone())
+    }
 }
 
 /// An analysis task.
 pub struct Task {
-    received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
-    config: VideoAnalyzerConfig,
+    config: TaskConfig,
 }
 
 impl Task {
     /// Creates a new [`Task`].
     #[inline]
-    pub fn new(
-        config: VideoAnalyzerConfig,
-        received: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
-    ) -> Self {
-        Self { received, config }
+    pub fn new(config: TaskConfig) -> Self {
+        Self { config }
     }
 
     /// Sends the task to the analyzer using `analyzer`.
+    ///
+    /// # Errors
+    /// An error is returned when failed to send the task to the analyzer. This can occur if the
+    /// analyzer has been deallocated already, implying that the wrapped receiver has also been
+    /// deallocated.
     #[inline]
-    pub fn spawn(self, analyzer: &mpsc::Sender<Task>) -> Result<(), mpsc::SendError<Self>> {
+    pub fn spawn(
+        self,
+        analyzer: &mpsc::Sender<SpawnedTask>,
+    ) -> Result<SpawnedTaskHandle, mpsc::SendError<Self>> {
+        let (tx, rx) = oneshot::channel();
+        let spawned = SpawnedTask {
+            task: self,
+            sender: tx,
+        };
+        spawned
+            .spawn(analyzer)
+            .map_err(|e| mpsc::SendError(e.0.task))?;
+        Ok(SpawnedTaskHandle { receiver: rx })
+    }
+}
+
+/// An analysis task to be sent to the analyzer. It wraps a [`Task`] inside and uses message
+/// passing internally.
+pub struct SpawnedTask {
+    task: Task,
+    sender: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
+}
+
+impl SpawnedTask {
+    #[inline]
+    fn spawn(self, analyzer: &mpsc::Sender<SpawnedTask>) -> Result<(), mpsc::SendError<Self>> {
         analyzer.send(self)
+    }
+}
+
+/// A handle to the spawned task. This can be used to receive the analysis results.
+pub struct SpawnedTaskHandle {
+    receiver: oneshot::Receiver<io::Result<VideoAnalyzerOutput>>,
+}
+
+impl SpawnedTaskHandle {
+    /// Receive analysis results from the analyzer.
+    ///
+    /// # Errors
+    /// An error is returned if the corresponding sender has been dropped. This usually occurs when
+    /// the analyzer accidentally drops the sender before sending anything back.
+    #[inline]
+    pub async fn recv(self) -> Result<io::Result<VideoAnalyzerOutput>, oneshot::error::RecvError> {
+        self.receiver.await
     }
 }
 
@@ -89,22 +140,23 @@ impl Task {
 ///
 /// An instance of [`VideoAnalyzer`] should be run in a background thread.
 pub struct VideoAnalyzer {
-    scheduled: mpsc::Receiver<Task>,
+    scheduled: mpsc::Receiver<SpawnedTask>,
 }
 
 impl VideoAnalyzer {
     /// Creates an [`VideoAnalyzer`] instance.
     #[inline]
-    pub fn new(scheduled: mpsc::Receiver<Task>) -> Self {
-        Self { scheduled }
+    pub fn new() -> (Self, VideoAnalyzerBuffer) {
+        let (tx, rx) = mpsc::channel();
+        (Self { scheduled: rx }, tx)
     }
 
     /// Starts receving analysis requests. The requests are processed sequentially due to limited
     /// computing resources.
     pub fn run(self) {
         while let Ok(task) = self.scheduled.recv() {
-            let output = Self::analyze(&task);
-            let _ = task.received.send(output);
+            let output = Self::analyze(&task.task);
+            let _ = task.sender.send(output);
         }
     }
 

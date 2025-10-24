@@ -6,7 +6,6 @@ use clap::{Arg, Command, value_parser};
 use env_logger::Env;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
-use std::sync::mpsc;
 use std::thread;
 use streameme_backend::analyzer::VideoAnalyzer;
 use streameme_backend::handlers;
@@ -31,11 +30,11 @@ async fn main() -> std::io::Result<()> {
     let port = *matches.get_one::<u16>("port").unwrap();
 
     // Initialize an analyzer on another thread, and setup a channel for queueing analysis requests.
-    let (tx, rx) = mpsc::channel();
+    let (analyzer, analyzer_buf) = VideoAnalyzer::new();
     thread::spawn(move || {
-        VideoAnalyzer::new(rx).run();
+        analyzer.run();
     });
-    let analyzer = web::Data::new(tx);
+    let analyzer = web::Data::new(analyzer_buf);
 
     // Create a temporary directory. This is for the purpose of storing uploaded videos and
     // communicating with the inference script. The temporary directory is deleted automatically
