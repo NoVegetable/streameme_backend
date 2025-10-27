@@ -1,7 +1,7 @@
 use actix_cors::Cors;
 use actix_multipart::form::MultipartFormConfig;
 use actix_multipart::form::tempfile::TempFileConfig;
-use actix_web::{App, HttpServer, middleware, web};
+use actix_web::{App, HttpServer, http, middleware, web};
 use clap::{Arg, Command, value_parser};
 use env_logger::Env;
 use std::net::Ipv4Addr;
@@ -45,11 +45,9 @@ async fn main() -> std::io::Result<()> {
         let path = tmp_dir_2.path();
         App::new()
             .wrap(
-                // FIXME: This is not secure, it should be fixed in the future.
                 Cors::default()
                     .allow_any_origin()
-                    .allow_any_method()
-                    .allow_any_header(),
+                    .allowed_methods([http::Method::POST]),
             )
             .wrap(middleware::Logger::default())
             .app_data(TempFileConfig::default().directory(path))
