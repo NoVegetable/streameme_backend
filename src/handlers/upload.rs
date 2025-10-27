@@ -1,5 +1,6 @@
+use crate::analyzer::task::TaskConfig;
 use crate::analyzer::{
-    TaskConfig, VideoAnalyzerBuffer, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
+    VideoAnalyzerBuffer, VideoAnalyzerMode, VideoAnalyzerModeDesc, VideoAnalyzerOutput,
 };
 use crate::handlers::utils;
 use actix_multipart::form::{MultipartForm, json::Json as MpJson, tempfile::TempFile};

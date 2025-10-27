@@ -1,15 +1,16 @@
 /// This is a module for parsing output from the inference procedure.
 mod inference;
+pub(crate) mod task;
 
 use inference::InferenceOutput;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::Debug;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::mpsc;
+use task::{SpawnedTask, Task};
 use tempfile::TempDir;
-use tokio::sync::oneshot;
 
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
@@ -30,107 +31,6 @@ impl VideoAnalyzerModeDesc {
             Binary => String::from("binary"),
             Multi => String::from("multi"),
         })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct TaskConfig {
-    video_name: String,
-    video_path: PathBuf,
-    analyze_mode: VideoAnalyzerMode,
-}
-
-impl TaskConfig {
-    #[inline]
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        Self {
-            video_name: String::from("video"),
-            video_path: PathBuf::from(path.as_ref()),
-            analyze_mode: VideoAnalyzerMode::Multi,
-        }
-    }
-
-    #[inline]
-    pub fn video_name(&mut self, video_name: &str) -> &mut Self {
-        video_name.clone_into(&mut self.video_name);
-        self
-    }
-
-    #[inline]
-    pub fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
-        self.analyze_mode = analyze_mode;
-        self
-    }
-
-    #[inline]
-    pub fn build(&self) -> Task {
-        Task::new(self.clone())
-    }
-}
-
-/// An analysis task.
-pub(crate) struct Task {
-    config: TaskConfig,
-}
-
-impl Task {
-    /// Creates a new [`Task`].
-    #[inline]
-    pub fn new(config: TaskConfig) -> Self {
-        Self { config }
-    }
-
-    /// Sends the task to the analyzer using `analyzer`.
-    ///
-    /// # Errors
-    /// An error is returned when failed to send the task to the analyzer. This can occur if the
-    /// analyzer has been deallocated already, implying that the wrapped receiver has also been
-    /// deallocated.
-    #[inline]
-    pub fn spawn(
-        self,
-        analyzer: &VideoAnalyzerBuffer,
-    ) -> Result<SpawnedTaskHandle, mpsc::SendError<Self>> {
-        let (tx, rx) = oneshot::channel();
-        let spawned = SpawnedTask {
-            task: self,
-            sender: tx,
-        };
-        spawned
-            .spawn(analyzer)
-            .map_err(|e| mpsc::SendError(e.0.task))?;
-        Ok(SpawnedTaskHandle { receiver: rx })
-    }
-}
-
-/// An analysis task to be sent to the analyzer. It wraps a [`Task`] inside and uses message
-/// passing internally.
-struct SpawnedTask {
-    task: Task,
-    sender: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
-}
-
-impl SpawnedTask {
-    #[inline]
-    fn spawn(self, analyzer: &VideoAnalyzerBuffer) -> Result<(), mpsc::SendError<Self>> {
-        analyzer.send(self)
-    }
-}
-
-/// A handle to the spawned task. This can be used to receive the analysis results.
-pub(crate) struct SpawnedTaskHandle {
-    receiver: oneshot::Receiver<io::Result<VideoAnalyzerOutput>>,
-}
-
-impl SpawnedTaskHandle {
-    /// Receive analysis results from the analyzer.
-    ///
-    /// # Errors
-    /// An error is returned if the corresponding sender has been dropped. This usually occurs when
-    /// the analyzer accidentally drops the sender before sending anything back.
-    #[inline]
-    pub async fn recv(self) -> Result<io::Result<VideoAnalyzerOutput>, oneshot::error::RecvError> {
-        self.receiver.await
     }
 }
 
@@ -164,8 +64,8 @@ impl VideoAnalyzer {
     /// computing resources.
     pub fn run(self) {
         while let Ok(task) = self.scheduled.recv() {
-            let output = Self::analyze(&task.task);
-            let _ = task.sender.send(output);
+            let output = Self::analyze(task.task());
+            let _ = task.send(output);
         }
     }
 
@@ -190,8 +90,8 @@ impl VideoAnalyzer {
         log::debug!("executing inference.py under {}", command_dir.display());
         log::debug!(
             "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --output_dir {}",
-            task.config.video_path.display(),
-            &task.config.video_name,
+            task.video_path().display(),
+            task.video_name(),
             out_dir.path().display()
         );
 
@@ -199,9 +99,9 @@ impl VideoAnalyzer {
             .current_dir(command_dir)
             .arg("inference.py")
             .arg("--video_path")
-            .arg(&task.config.video_path)
+            .arg(task.video_path())
             .arg("--video_name")
-            .arg(&task.config.video_name)
+            .arg(task.video_name())
             .arg("--output_dir")
             .arg(out_dir.path())
             .output()?;
