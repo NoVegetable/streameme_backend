@@ -6,8 +6,8 @@ This is the backend for StreaMeme web service.
 
 First, please ensure you have installed [Rust](https://www.rust-lang.org/). You can follow the instruction [here](https://www.rust-lang.org/tools/install) to install it.
 
-Then, please check whether StreaMeme Inference project is at the location `../streameme_inference`, since this the default location that the backend looks for.
-If it is not there, you can still configure it through `inference_dir` option.
+Then, please check whether StreaMeme Inference project is at the location `../streameme_inference`, since this is the default location that the backend looks for.
+If it is not there, you can still configure it through `--inference_dir` option.
 
 After that, you can invoke the backend with the following command:
 ```bash
