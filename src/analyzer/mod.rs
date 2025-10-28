@@ -12,6 +12,8 @@ use std::sync::mpsc;
 use task::{SpawnedTask, Task};
 use tempfile::TempDir;
 
+pub(crate) type VideoAnalyzerResult = io::Result<VideoAnalyzerOutput>;
+
 #[derive(Debug, Copy, Clone, Deserialize_repr)]
 #[repr(u8)]
 pub(crate) enum VideoAnalyzerMode {
@@ -94,7 +96,7 @@ impl VideoAnalyzer {
     /// # Errors
     /// An error is returned if the inference script can not be found, the inference procedure
     /// can not be spawned for whatever reason, or the analysis results aren't parsed successfully.
-    fn analyze(task: &Task) -> io::Result<VideoAnalyzerOutput> {
+    fn analyze(task: &Task) -> VideoAnalyzerResult {
         let out_dir = TempDir::new_in(".")?;
         let command_dir = std::fs::canonicalize("../streameme_inference")?;
         let video_path = task.video_path();

@@ -1,6 +1,5 @@
-use super::{VideoAnalyzerBuffer, VideoAnalyzerMode, VideoAnalyzerOutput};
+use super::{VideoAnalyzerBuffer, VideoAnalyzerMode, VideoAnalyzerResult};
 use std::fmt::Debug;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use tokio::sync::oneshot;
@@ -113,7 +112,7 @@ impl Task {
 /// passing internally.
 pub(super) struct SpawnedTask {
     task: Task,
-    sender: oneshot::Sender<io::Result<VideoAnalyzerOutput>>,
+    sender: oneshot::Sender<VideoAnalyzerResult>,
 }
 
 impl SpawnedTask {
@@ -128,17 +127,14 @@ impl SpawnedTask {
     }
 
     #[inline]
-    pub fn send(
-        self,
-        output: io::Result<VideoAnalyzerOutput>,
-    ) -> Result<(), io::Result<VideoAnalyzerOutput>> {
+    pub fn send(self, output: VideoAnalyzerResult) -> Result<(), VideoAnalyzerResult> {
         self.sender.send(output)
     }
 }
 
 /// A handle to the spawned task. This can be used to receive the analysis results.
 pub struct SpawnedTaskHandle {
-    receiver: oneshot::Receiver<io::Result<VideoAnalyzerOutput>>,
+    receiver: oneshot::Receiver<VideoAnalyzerResult>,
 }
 
 impl SpawnedTaskHandle {
@@ -148,7 +144,7 @@ impl SpawnedTaskHandle {
     /// An error is returned if the corresponding sender has been dropped. This usually occurs when
     /// the analyzer accidentally drops the sender before sending anything back.
     #[inline]
-    pub async fn recv(self) -> Result<io::Result<VideoAnalyzerOutput>, oneshot::error::RecvError> {
+    pub async fn recv(self) -> Result<VideoAnalyzerResult, oneshot::error::RecvError> {
         self.receiver.await
     }
 }
