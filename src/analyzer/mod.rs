@@ -66,6 +66,7 @@ impl VideoAnalyzerBuffer {
 pub struct VideoAnalyzer {
     inference_dir: PathBuf,
     interpreter_path: PathBuf,
+    inference_script_path: PathBuf,
     scheduled: mpsc::Receiver<SpawnedTask>,
 }
 
@@ -79,11 +80,13 @@ impl VideoAnalyzer {
     #[inline]
     pub fn new(inference_dir: PathBuf) -> (Self, VideoAnalyzerBuffer) {
         let interpreter_path = inference_dir.join(".venv/bin/python");
+        let inference_script_path = inference_dir.join("inference.py");
         let (tx, rx) = mpsc::channel();
         (
             Self {
                 inference_dir,
                 interpreter_path,
+                inference_script_path,
                 scheduled: rx,
             },
             VideoAnalyzerBuffer(tx),
@@ -130,7 +133,7 @@ impl VideoAnalyzer {
 
         let output = Command::new(&self.interpreter_path)
             .current_dir(&self.inference_dir)
-            .arg("inference.py")
+            .arg(&self.inference_script_path)
             .arg("--video_path")
             .arg(task.video_path())
             .arg("--video_name")
