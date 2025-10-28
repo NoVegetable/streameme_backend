@@ -8,6 +8,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::Debug;
 use std::io;
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::mpsc;
 use task::{SpawnedTask, Task};
 use tempfile::TempDir;
@@ -63,22 +64,32 @@ impl VideoAnalyzerBuffer {
 ///
 /// An instance of [`VideoAnalyzer`] should be run in a background thread.
 pub struct VideoAnalyzer {
+    inference_dir: PathBuf,
     scheduled: mpsc::Receiver<SpawnedTask>,
 }
 
 impl VideoAnalyzer {
     /// Creates an [`VideoAnalyzer`] instance.
+    ///
+    /// `inference_dir` should point to the root directory of the `streameme_inference` project, and
+    /// the analyzer would make calls to the inference script located at there.
     #[inline]
-    pub fn new() -> (Self, VideoAnalyzerBuffer) {
+    pub fn new(inference_dir: PathBuf) -> (Self, VideoAnalyzerBuffer) {
         let (tx, rx) = mpsc::channel();
-        (Self { scheduled: rx }, VideoAnalyzerBuffer(tx))
+        (
+            Self {
+                inference_dir,
+                scheduled: rx,
+            },
+            VideoAnalyzerBuffer(tx),
+        )
     }
 
     /// Starts receving analysis requests. The requests are processed sequentially due to limited
     /// computing resources.
     pub fn run(self) {
         while let Ok(task) = self.scheduled.recv() {
-            let output = Self::analyze(task.task());
+            let output = self.analyze(task.task());
             let _ = task.send(output);
         }
     }
@@ -96,25 +107,27 @@ impl VideoAnalyzer {
     /// # Errors
     /// An error is returned if the inference script can not be found, the inference procedure
     /// can not be spawned for whatever reason, or the analysis results aren't parsed successfully.
-    fn analyze(task: &Task) -> VideoAnalyzerResult {
+    fn analyze(&self, task: &Task) -> VideoAnalyzerResult {
         let out_dir = TempDir::new_in(".")?;
-        let command_dir = std::fs::canonicalize("../streameme_inference")?;
         let video_path = task.video_path();
         let video_name = task.video_name();
         let analyze_mode_desc = task.analyze_mode().desc();
 
         log::info!("starting inference procedure");
-        log::debug!("executing inference.py under {}", command_dir.display());
         log::debug!(
-            "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
+            "executing inference.py under {}",
+            self.inference_dir.display()
+        );
+        log::debug!(
+            "running command: .venv/bin/python inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
             video_path.display(),
             video_name,
             &analyze_mode_desc,
             out_dir.path().display()
         );
 
-        let output = std::process::Command::new("./.venv/bin/python")
-            .current_dir(command_dir)
+        let output = Command::new(".venv/bin/python")
+            .current_dir(&self.inference_dir)
             .arg("inference.py")
             .arg("--video_path")
             .arg(task.video_path())

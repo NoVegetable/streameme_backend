@@ -4,7 +4,9 @@ use actix_multipart::form::tempfile::TempFileConfig;
 use actix_web::{App, HttpServer, http, middleware, web};
 use clap::{Arg, Command, value_parser};
 use env_logger::Env;
+use std::fs;
 use std::net::Ipv4Addr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use streameme_backend::analyzer::VideoAnalyzer;
@@ -26,11 +28,20 @@ async fn main() -> std::io::Result<()> {
                 .value_parser(value_parser!(u16))
                 .default_value("9090"),
         )
+        .arg(
+            Arg::new("inference_dir")
+                .help("The root directory of streameme_inference project")
+                .long("inference_dir")
+                .value_parser(value_parser!(PathBuf))
+                .default_value("../streameme_inference"),
+        )
         .get_matches();
     let port = *matches.get_one::<u16>("port").unwrap();
+    let inference_dir = matches.get_one::<PathBuf>("inference_dir").unwrap();
+    let inference_dir = fs::canonicalize(inference_dir)?;
 
     // Initialize an analyzer on another thread, and setup a channel for queueing analysis requests.
-    let (analyzer, analyzer_buf) = VideoAnalyzer::new();
+    let (analyzer, analyzer_buf) = VideoAnalyzer::new(inference_dir);
     thread::spawn(move || {
         analyzer.run();
     });
