@@ -123,8 +123,13 @@ impl VideoAnalyzer {
 
         log::info!("starting inference procedure");
         log::debug!(
-            "running command: {} inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
+            "working directory is set to {}",
+            self.inference_dir.display()
+        );
+        log::debug!(
+            "running command: {} {} --video_path {} --video_name {} --mode {} --output_dir {}",
             self.interpreter_path.display(),
+            self.inference_script_path.display(),
             video_path.display(),
             video_name,
             &analyze_mode_desc,
