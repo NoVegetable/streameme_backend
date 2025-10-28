@@ -6,7 +6,6 @@ use inference::InferenceOutput;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::Debug;
-use std::fs;
 use std::io;
 use std::path::PathBuf;
 use std::process::Command;
@@ -66,6 +65,7 @@ impl VideoAnalyzerBuffer {
 /// An instance of [`VideoAnalyzer`] should be run in a background thread.
 pub struct VideoAnalyzer {
     inference_dir: PathBuf,
+    interpreter_path: PathBuf,
     scheduled: mpsc::Receiver<SpawnedTask>,
 }
 
@@ -76,10 +76,12 @@ impl VideoAnalyzer {
     /// the analyzer would make calls to the inference script located at there.
     #[inline]
     pub fn new(inference_dir: PathBuf) -> (Self, VideoAnalyzerBuffer) {
+        let interpreter_path = inference_dir.join(".venv/bin/python");
         let (tx, rx) = mpsc::channel();
         (
             Self {
                 inference_dir,
+                interpreter_path,
                 scheduled: rx,
             },
             VideoAnalyzerBuffer(tx),
@@ -113,19 +115,18 @@ impl VideoAnalyzer {
         let video_path = task.video_path();
         let video_name = task.video_name();
         let analyze_mode_desc = task.analyze_mode().desc();
-        let interpreter_path = fs::canonicalize(self.inference_dir.join(".venv/bin/python"))?;
 
         log::info!("starting inference procedure");
         log::debug!(
             "running command: {} inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
-            interpreter_path.display(),
+            self.interpreter_path.display(),
             video_path.display(),
             video_name,
             &analyze_mode_desc,
             out_dir.path().display()
         );
 
-        let output = Command::new(&interpreter_path)
+        let output = Command::new(&self.interpreter_path)
             .current_dir(&self.inference_dir)
             .arg("inference.py")
             .arg("--video_path")
