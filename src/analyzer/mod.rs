@@ -6,6 +6,7 @@ use inference::InferenceOutput;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::Debug;
+use std::fs;
 use std::io;
 use std::path::PathBuf;
 use std::process::Command;
@@ -112,21 +113,19 @@ impl VideoAnalyzer {
         let video_path = task.video_path();
         let video_name = task.video_name();
         let analyze_mode_desc = task.analyze_mode().desc();
+        let interpreter_path = fs::canonicalize(self.inference_dir.join(".venv/bin/python"))?;
 
         log::info!("starting inference procedure");
         log::debug!(
-            "executing inference.py under {}",
-            self.inference_dir.display()
-        );
-        log::debug!(
-            "running command: .venv/bin/python inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
+            "running command: {} inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
+            interpreter_path.display(),
             video_path.display(),
             video_name,
             &analyze_mode_desc,
             out_dir.path().display()
         );
 
-        let output = Command::new(".venv/bin/python")
+        let output = Command::new(&interpreter_path)
             .current_dir(&self.inference_dir)
             .arg("inference.py")
             .arg("--video_path")
