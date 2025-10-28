@@ -71,7 +71,10 @@ pub struct VideoAnalyzer {
 }
 
 impl VideoAnalyzer {
-    /// Creates an [`VideoAnalyzer`] instance.
+    /// Creates a [`VideoAnalyzer`] instance and a [`VideoAnalyzerBuffer`], which is a sender to the
+    /// analyzer's buffer. This sender can be passed into [`Task::spawn()`] to send the task to the
+    /// created analyzer. You might need to shared this sender between threads if you want to send
+    /// tasks from multiple threads.
     ///
     /// `inference_dir` should point to the root directory of the `streameme_inference` project, and
     /// the analyzer would make calls to the inference script located at there. It is recommended to
