@@ -198,9 +198,9 @@ impl VideoAnalyzerSuggestion {
 #[repr(transparent)]
 pub(crate) struct VideoAnalyzerOutput(Option<Vec<VideoAnalyzerSuggestion>>);
 
-impl From<Vec<VideoAnalyzerSuggestion>> for VideoAnalyzerOutput {
-    fn from(suggestions: Vec<VideoAnalyzerSuggestion>) -> Self {
-        Self(Some(suggestions))
+impl FromIterator<VideoAnalyzerSuggestion> for VideoAnalyzerOutput {
+    fn from_iter<T: IntoIterator<Item = VideoAnalyzerSuggestion>>(iter: T) -> Self {
+        Self(Some(Vec::from_iter(iter)))
     }
 }
 
@@ -224,6 +224,6 @@ impl From<InferenceOutput> for VideoAnalyzerOutput {
                 ))
             })
             .collect();
-        Self::from(suggestions)
+        Self::from_iter(suggestions)
     }
 }
