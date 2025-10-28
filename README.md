@@ -6,17 +6,21 @@ This is the backend for StreaMeme web service.
 
 First, please ensure you have installed [Rust](https://www.rust-lang.org/). You can follow the instruction [here](https://www.rust-lang.org/tools/install) to install it.
 
-Then, you need to ensure the StreaMeme Inference project is at the location `../streameme_inference` (This is subject to change).
+Then, please check whether StreaMeme Inference project is at the location `../streameme_inference`, since this the default location that the backend looks for.
+If it is not there, you can still configure it through `inference_dir` option.
 
 After that, you can invoke the backend with the following command:
 ```bash
 cargo run --release
 ```
-which will start the backend at port 9090. You can also choose another port using `--port` (or `-p`) argument, such as
+which will start the backend at port 9090. You can also choose another port using `--port` (or `-p`) option, such as
 ```bash
 cargo run -- --port 6789
 ```
-
+As mentioned above, you can configure the location of StreaMeme Inference project using `--inference_dir` option, such as
+```bash
+cargo run -- --inference_dir "$HOME"/streameme_inference
+```
 ## APIs
 
 Currently, we only provide a single API `POST /upload`. 
