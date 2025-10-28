@@ -19,6 +19,12 @@ pub(crate) enum VideoAnalyzerMode {
     Multi = 1,
 }
 
+impl Default for VideoAnalyzerMode {
+    fn default() -> Self {
+        Self::Multi
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[repr(transparent)]
 pub(crate) struct VideoAnalyzerModeDesc(String);
@@ -85,13 +91,17 @@ impl VideoAnalyzer {
     fn analyze(task: &Task) -> io::Result<VideoAnalyzerOutput> {
         let out_dir = TempDir::new_in(".")?;
         let command_dir = std::fs::canonicalize("../streameme_inference")?;
+        let video_path = task.video_path();
+        let video_name = task.video_name();
+        let analyze_mode_desc = VideoAnalyzerModeDesc::new(task.analyze_mode());
 
         log::info!("starting inference procedure");
         log::debug!("executing inference.py under {}", command_dir.display());
         log::debug!(
-            "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --output_dir {}",
-            task.video_path().display(),
-            task.video_name(),
+            "running command: ./.venv/bin/python inference.py --video_path {} --video_name {} --mode {} --output_dir {}",
+            video_path.display(),
+            video_name,
+            &analyze_mode_desc.0,
             out_dir.path().display()
         );
 
@@ -102,6 +112,8 @@ impl VideoAnalyzer {
             .arg(task.video_path())
             .arg("--video_name")
             .arg(task.video_name())
+            .arg("--mode")
+            .arg(&analyze_mode_desc.0)
             .arg("--output_dir")
             .arg(out_dir.path())
             .output()?;

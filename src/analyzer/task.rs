@@ -5,51 +5,70 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use tokio::sync::oneshot;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TaskConfig {
-    video_name: String,
     video_path: PathBuf,
-    analyze_mode: VideoAnalyzerMode,
+    video_name: Option<String>,
+    analyze_mode: Option<VideoAnalyzerMode>,
 }
 
 impl TaskConfig {
     #[inline]
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<Path> + ?Sized>(path: &P) -> Self {
         Self {
-            video_name: String::from("video"),
             video_path: PathBuf::from(path.as_ref()),
-            analyze_mode: VideoAnalyzerMode::Multi,
+            video_name: None,
+            analyze_mode: None,
         }
     }
 
     #[inline]
     pub fn video_name(&mut self, video_name: &str) -> &mut Self {
-        video_name.clone_into(&mut self.video_name);
+        self.video_name = Some(String::from(video_name));
         self
     }
 
     #[inline]
     pub fn analyze_mode(&mut self, analyze_mode: VideoAnalyzerMode) -> &mut Self {
-        self.analyze_mode = analyze_mode;
+        self.analyze_mode = Some(analyze_mode);
         self
     }
 
     #[inline]
     pub fn build(&self) -> Task {
-        Task::new(self.clone())
+        Task {
+            video_path: self.video_path.clone(),
+            video_name: self
+                .video_name
+                .as_ref()
+                .map_or(String::from("_anonymous"), |s| s.clone()),
+            analyze_mode: self.analyze_mode.unwrap_or_default(),
+        }
     }
 }
 
 /// An analysis task.
 pub struct Task {
-    config: TaskConfig,
+    video_path: PathBuf,
+    video_name: String,
+    analyze_mode: VideoAnalyzerMode,
 }
 
 impl Task {
     /// Creates a new [`Task`].
+    #[allow(dead_code)]
     #[inline]
-    pub fn new(config: TaskConfig) -> Self {
-        Self { config }
+    pub fn new<P: AsRef<Path> + ?Sized>(
+        video_path: &P,
+        video_name: &str,
+        analyze_mode: VideoAnalyzerMode,
+    ) -> Self {
+        Self {
+            video_path: PathBuf::from(video_path.as_ref()),
+            video_name: String::from(video_name),
+            analyze_mode,
+        }
     }
 
     /// Sends the task to the analyzer using `analyzer`.
@@ -76,12 +95,17 @@ impl Task {
 
     #[inline]
     pub(super) fn video_path(&self) -> &Path {
-        &self.config.video_path
+        &self.video_path
     }
 
     #[inline]
     pub(super) fn video_name(&self) -> &str {
-        &self.config.video_name
+        &self.video_name
+    }
+
+    #[inline]
+    pub(super) fn analyze_mode(&self) -> VideoAnalyzerMode {
+        self.analyze_mode
     }
 }
 
