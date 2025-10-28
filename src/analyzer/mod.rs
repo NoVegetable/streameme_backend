@@ -73,7 +73,9 @@ impl VideoAnalyzer {
     /// Creates an [`VideoAnalyzer`] instance.
     ///
     /// `inference_dir` should point to the root directory of the `streameme_inference` project, and
-    /// the analyzer would make calls to the inference script located at there.
+    /// the analyzer would make calls to the inference script located at there. It is recommended to
+    /// use absolute path for `inference_dir` to avoid some platform specific behavior and the risk
+    /// of unstability.
     #[inline]
     pub fn new(inference_dir: PathBuf) -> (Self, VideoAnalyzerBuffer) {
         let interpreter_path = inference_dir.join(".venv/bin/python");
