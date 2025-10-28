@@ -151,9 +151,7 @@ impl VideoAnalyzer {
 
         if output.status.success() {
             log::info!("inference procedure exited successfully");
-            let mut inference_out_path = PathBuf::new();
-            inference_out_path.push(out_dir.path());
-            inference_out_path.push("suggestions.json");
+            let inference_out_path = out_dir.path().join("suggestion.json");
             log::debug!(
                 "parsing inference results from {}",
                 inference_out_path.display()
