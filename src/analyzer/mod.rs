@@ -49,7 +49,8 @@ impl VideoAnalyzerModeDesc {
     }
 }
 
-/// A sender to the analyzer's task buffer.
+/// A sender to the analyzer's task buffer. See documentation of [`VideoAnalyzer::new()`] for the
+/// usage of this type.
 #[repr(transparent)]
 pub struct VideoAnalyzerBuffer(mpsc::Sender<SpawnedTask>);
 
@@ -72,9 +73,8 @@ pub struct VideoAnalyzer {
 
 impl VideoAnalyzer {
     /// Creates a [`VideoAnalyzer`] instance and a [`VideoAnalyzerBuffer`], which is a sender to the
-    /// analyzer's buffer. This sender can be passed into [`Task::spawn()`] to send the task to the
-    /// created analyzer. You might need to shared this sender between threads if you want to send
-    /// tasks from multiple threads.
+    /// analyzer's buffer. This sender would be used to send tasks to the created analyzer. You need
+    /// to shared this sender between threads using [`actix_web::web::Data`].
     ///
     /// `inference_dir` should point to the root directory of the `streameme_inference` project, and
     /// the analyzer would make calls to the inference script located at there. It is recommended to
